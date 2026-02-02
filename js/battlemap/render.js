@@ -166,14 +166,27 @@ export function draw(canvas, ctx, state, overlay){
 
     // HP at center (MJ uniquement)
     const hpText = (t.hp != null && t.hp !== "") ? String(t.hp) : "";
+    const tempHpValue = typeof t.hpTemp === "number" ? t.hpTemp : Number(t.hpTemp || 0);
+    const tempHpText = tempHpValue > 0 ? `+${tempHpValue}` : "";
     if(showHpOnTokens && hpText){
-      ctx.font = `${Math.max(12, grid.cellPx * 0.30)}px system-ui`;
+      const hpFontSize = Math.max(12, grid.cellPx * 0.30);
+      const tempFontSize = Math.max(10, grid.cellPx * 0.22);
+      ctx.font = `${hpFontSize}px system-ui`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "rgba(0,0,0,0.38)";
       ctx.fillText(hpText, cxTok + 1, cyTok + 1);
       ctx.fillStyle = "rgba(255,255,255,0.95)";
       ctx.fillText(hpText, cxTok, cyTok);
+      if(tempHpText){
+        const tempY = cyTok + hpFontSize * 0.7;
+        ctx.font = `${tempFontSize}px system-ui`;
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillText(tempHpText, cxTok + 1, tempY + 1);
+        ctx.fillStyle = "rgba(250,204,21,0.98)";
+        ctx.fillText(tempHpText, cxTok, tempY);
+      }
     }
 
     // Full name under token (single line)
