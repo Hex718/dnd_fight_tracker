@@ -195,6 +195,13 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
       return;
     }
 
+    if(dragMode === "background" && dragBackgroundOffset && state.background){
+      state.background.x = world.x - dragBackgroundOffset.x;
+      state.background.y = world.y - dragBackgroundOffset.y;
+      onChange();
+      return;
+    }
+
     if(dragMode === "draw-rect" && state.ui.previewShape){
       state.ui.previewShape.w = worldSnap.x - drawStart.x;
       state.ui.previewShape.h = worldSnap.y - drawStart.y;
