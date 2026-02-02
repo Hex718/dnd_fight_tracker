@@ -14,6 +14,9 @@ const followCameraToggle = document.getElementById("followCamera");
 const measureBtn = document.getElementById("toolMeasure");
 const pingBtn = document.getElementById("toolPing");
 const gridToggle = document.getElementById("playerGridToggle");
+const zoomRange = document.getElementById("playerZoomRange");
+const zoomValue = document.getElementById("playerZoomValue");
+const fullscreenBtn = document.getElementById("playerFullscreenBtn");
 const pingNameInput = document.getElementById("pingName");
 const pingColorInput = document.getElementById("pingColor");
 const turnBarEl = document.getElementById("turnBar");
@@ -141,6 +144,36 @@ gridToggle?.addEventListener("change", () => {
   dirty = true;
 });
 
+zoomRange?.addEventListener("input", () => {
+  const v = Number(zoomRange.value || 1);
+  if(!isFinite(v)) return;
+  breakFollowCameraIfNeeded();
+  applyCameraZoom(v);
+});
+
+function updateFullscreenUi(){
+  if(!fullscreenBtn) return;
+  const isFull = document.fullscreenElement === document.documentElement;
+  fullscreenBtn.classList.toggle("is-active", isFull);
+  fullscreenBtn.setAttribute("aria-pressed", isFull ? "true" : "false");
+  fullscreenBtn.title = isFull ? "Quitter le plein écran" : "Plein écran";
+}
+
+fullscreenBtn?.addEventListener("click", async () => {
+  try{
+    if(document.fullscreenElement){
+      await document.exitFullscreen();
+    }else{
+      await document.documentElement.requestFullscreen();
+    }
+  }catch{
+    // ignore
+  }
+});
+
+document.addEventListener("fullscreenchange", updateFullscreenUi);
+updateFullscreenUi();
+
 
 let state = createInitialState();
 state.ui = { view: "player" }; // options locales (non sync)
@@ -193,6 +226,29 @@ function resizeCanvas(){
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+function syncZoomUi(){
+  if(!zoomRange || !state?.camera) return;
+  if(document.activeElement !== zoomRange){
+    zoomRange.value = String(state.camera.zoom);
+  }
+  if(zoomValue){
+    zoomValue.textContent = `${Math.round(state.camera.zoom * 100)}%`;
+  }
+}
+
+function applyCameraZoom(newZoom, anchorScreen){
+  if(!state?.camera) return;
+  const nextZoom = Math.max(0.2, Math.min(5, newZoom));
+  const anchor = anchorScreen || { x: canvas.width / 2, y: canvas.height / 2 };
+  const worldX = (anchor.x - canvas.width / 2) / state.camera.zoom + state.camera.x;
+  const worldY = (anchor.y - canvas.height / 2) / state.camera.zoom + state.camera.y;
+  state.camera.zoom = nextZoom;
+  state.camera.x = worldX - (anchor.x - canvas.width / 2) / state.camera.zoom;
+  state.camera.y = worldY - (anchor.y - canvas.height / 2) / state.camera.zoom;
+  dirty = true;
+  syncZoomUi();
+}
+
 function renderNow(){
   // apply local grid preference (does not affect MJ)
   if(gridToggle && state?.grid) state.grid.show = !!gridToggle.checked;
@@ -202,6 +258,7 @@ function renderNow(){
     ping: computePingOverlay(),
   };
   draw(canvas, ctx, state, overlay);
+  syncZoomUi();
   dirty = false;
 }
 
@@ -560,23 +617,13 @@ canvas.addEventListener("wheel", (e) => {
   breakFollowCameraIfNeeded();
   e.preventDefault();
   const zoomFactor = Math.exp(-e.deltaY * 0.0015);
-  const newZoom = Math.max(0.2, Math.min(5, state.camera.zoom * zoomFactor));
+  const newZoom = state.camera.zoom * zoomFactor;
 
   const rect = canvas.getBoundingClientRect();
   const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
   const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-  // world point under cursor before zoom
-  const worldX = (cx - canvas.width/2) / state.camera.zoom + state.camera.x;
-  const worldY = (cy - canvas.height/2) / state.camera.zoom + state.camera.y;
-
-  state.camera.zoom = newZoom;
-
-  // keep cursor stable
-  state.camera.x = worldX - (cx - canvas.width/2) / state.camera.zoom;
-  state.camera.y = worldY - (cy - canvas.height/2) / state.camera.zoom;
-
-  dirty = true;
+  applyCameraZoom(newZoom, { x: cx, y: cy });
 }, { passive: false });
 
 // Start realtime

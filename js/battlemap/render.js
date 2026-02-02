@@ -166,14 +166,28 @@ export function draw(canvas, ctx, state, overlay){
 
     // HP at center (MJ uniquement)
     const hpText = (t.hp != null && t.hp !== "") ? String(t.hp) : "";
-    if(showHpOnTokens && hpText){
-      ctx.font = `${Math.max(12, grid.cellPx * 0.30)}px system-ui`;
+    const tempHp = Number(t.hpTemp ?? 0);
+    if(showHpOnTokens && (hpText || tempHp > 0)){
+      const hpFont = Math.max(12, grid.cellPx * 0.30);
+      ctx.font = `${hpFont}px system-ui`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "rgba(0,0,0,0.38)";
-      ctx.fillText(hpText, cxTok + 1, cyTok + 1);
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.fillText(hpText, cxTok, cyTok);
+      if(hpText){
+        ctx.fillStyle = "rgba(0,0,0,0.38)";
+        ctx.fillText(hpText, cxTok + 1, cyTok + 1);
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.fillText(hpText, cxTok, cyTok);
+      }
+      if(tempHp > 0){
+        const tempFont = Math.max(10, grid.cellPx * 0.22);
+        const tempText = `+${tempHp}`;
+        const tempY = cyTok + hpFont * 0.72;
+        ctx.font = `${tempFont}px system-ui`;
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        ctx.fillText(tempText, cxTok + 1, tempY + 1);
+        ctx.fillStyle = "#facc15";
+        ctx.fillText(tempText, cxTok, tempY);
+      }
     }
 
     // Full name under token (single line)
