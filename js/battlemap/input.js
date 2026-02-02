@@ -8,6 +8,14 @@ function snapWorld(state, world){
   return { x: Math.round(world.x / c) * c, y: Math.round(world.y / c) * c };
 }
 
+function snapCellForToken(state, cell){
+  if(state.ui.snapMode !== "on") return cell;
+  return {
+    x: Math.round(cell.x * 2) / 2,
+    y: Math.round(cell.y * 2) / 2,
+  };
+}
+
 export function createInputController({ canvas, state, onChange, onStatus, onDropImage }){
   let isDown = false;
   let dragTokenId = null;
@@ -172,9 +180,17 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
     }
 
     if(dragMode === "token" && dragTokenId != null){
-      const cell = worldToCell(state, worldSnap);
-      updateTokenPosition(state, dragTokenId, cell.x, cell.y);
-      state.ui?.onTokenMoved?.(dragTokenId, cell.x, cell.y);
+      const cell = worldToCell(state, world);
+      const snapped = snapCellForToken(state, cell);
+      updateTokenPosition(state, dragTokenId, snapped.x, snapped.y);
+      state.ui?.onTokenMoved?.(dragTokenId, snapped.x, snapped.y);
+      onChange();
+      return;
+    }
+
+    if(dragMode === "background" && dragBackgroundOffset && state.background){
+      state.background.x = world.x - dragBackgroundOffset.x;
+      state.background.y = world.y - dragBackgroundOffset.y;
       onChange();
       return;
     }
