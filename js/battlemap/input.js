@@ -11,8 +11,9 @@ function snapWorld(state, world){
 export function createInputController({ canvas, state, onChange, onStatus, onDropImage }){
   let isDown = false;
   let dragTokenId = null;
-  let dragMode = null; // pan | measure | token | draw-rect | draw-circle | draw-pen
+  let dragMode = null; // pan | measure | token | background | draw-rect | draw-circle | draw-pen
   let drawStart = null;
+  let dragBackgroundOffset = null;
 
   function getDpr(){
     const r = canvas.getBoundingClientRect();
@@ -27,6 +28,8 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
 
   function setCursor(){
     if(dragMode === "pan") canvas.style.cursor = "grabbing";
+    else if(dragMode === "background") canvas.style.cursor = "grabbing";
+    else if(state.ui.tool === "background") canvas.style.cursor = "grab";
     else if(state.ui.measureMode) canvas.style.cursor = "crosshair";
     else if(state.ui.tool !== "tokens") canvas.style.cursor = "crosshair";
     else canvas.style.cursor = "default";
@@ -57,6 +60,21 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
       state.ui.measureStartCell = { x: cell.x, y: cell.y };
       state.ui.measureEndCell = { x: cell.x, y: cell.y };
       onStatus("Mesure…");
+      setCursor();
+      onChange();
+      return;
+    }
+
+    if(state.ui.tool === "background"){
+      if(!state.background){
+        onStatus("Aucune image de fond");
+        setCursor();
+        onChange();
+        return;
+      }
+      dragMode = "background";
+      dragBackgroundOffset = { x: world.x - state.background.x, y: world.y - state.background.y };
+      onStatus("Déplacement du fond");
       setCursor();
       onChange();
       return;
@@ -161,6 +179,13 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
       return;
     }
 
+    if(dragMode === "background" && dragBackgroundOffset && state.background){
+      state.background.x = world.x - dragBackgroundOffset.x;
+      state.background.y = world.y - dragBackgroundOffset.y;
+      onChange();
+      return;
+    }
+
     if(dragMode === "draw-rect" && state.ui.previewShape){
       state.ui.previewShape.w = worldSnap.x - drawStart.x;
       state.ui.previewShape.h = worldSnap.y - drawStart.y;
@@ -203,9 +228,11 @@ export function createInputController({ canvas, state, onChange, onStatus, onDro
 
     if(dragMode === "measure") onStatus("Prêt");
     else if(dragMode?.startsWith("draw")) onStatus("Prêt");
+    else if(dragMode === "background") onStatus("Prêt");
     dragMode = null;
     dragTokenId = null;
     drawStart = null;
+    dragBackgroundOffset = null;
     setCursor();
   };
 
