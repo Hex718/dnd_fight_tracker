@@ -476,6 +476,7 @@ dom.bgFile?.addEventListener("change", async () => {
         hideNameForPlayers: !!combatant.hideNameForPlayers,
         censorLabel: (typeof combatant.censorLabel === "string" && combatant.censorLabel.trim()) ? combatant.censorLabel.trim().toUpperCase() : null,
         hp: combatant.hpCurrent ?? "",
+        hpTemp: combatant.hpTemp ?? 0,
         ac: (combatant.acBase ?? 10) + (combatant.acTemp ?? 0),
         x: Math.round(centerCell.x * 2) / 2,
         y: Math.round(centerCell.y * 2) / 2,
@@ -489,6 +490,7 @@ dom.bgFile?.addEventListener("change", async () => {
     t.name = combatant.name || t.name;
     if (typeof combatant.tokenSize === "number") t.size = combatant.tokenSize;
     t.hp = combatant.hpCurrent ?? t.hp;
+    t.hpTemp = typeof combatant.hpTemp === "number" ? combatant.hpTemp : (t.hpTemp ?? 0);
     t.ac = (combatant.acBase ?? 10) + (combatant.acTemp ?? 0);
     t.hiddenForPlayers = !!combatant.hiddenFromPlayers;
     t.hideNameForPlayers = !!combatant.hideNameForPlayers;
