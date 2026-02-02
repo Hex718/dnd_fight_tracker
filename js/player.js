@@ -16,6 +16,7 @@ const pingBtn = document.getElementById("toolPing");
 const gridToggle = document.getElementById("playerGridToggle");
 const zoomRange = document.getElementById("playerZoomRange");
 const zoomValue = document.getElementById("playerZoomValue");
+const fullscreenBtn = document.getElementById("playerFullscreenBtn");
 const pingNameInput = document.getElementById("pingName");
 const pingColorInput = document.getElementById("pingColor");
 const turnBarEl = document.getElementById("turnBar");
@@ -149,6 +150,29 @@ zoomRange?.addEventListener("input", () => {
   breakFollowCameraIfNeeded();
   applyCameraZoom(v);
 });
+
+function updateFullscreenUi(){
+  if(!fullscreenBtn) return;
+  const isFull = document.fullscreenElement === document.documentElement;
+  fullscreenBtn.classList.toggle("is-active", isFull);
+  fullscreenBtn.setAttribute("aria-pressed", isFull ? "true" : "false");
+  fullscreenBtn.title = isFull ? "Quitter le plein écran" : "Plein écran";
+}
+
+fullscreenBtn?.addEventListener("click", async () => {
+  try{
+    if(document.fullscreenElement){
+      await document.exitFullscreen();
+    }else{
+      await document.documentElement.requestFullscreen();
+    }
+  }catch{
+    // ignore
+  }
+});
+
+document.addEventListener("fullscreenchange", updateFullscreenUi);
+updateFullscreenUi();
 
 
 let state = createInitialState();
