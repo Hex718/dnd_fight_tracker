@@ -1,5 +1,5 @@
 import { createInitialState, migrateState, addToken, undoShape, clearShapes } from "./model.js";
-import { draw } from "./render.js";
+import { draw, screenToWorld } from "./render.js";
 import { createInputController } from "./input.js";
 import { clamp } from "./utils.js";
 
@@ -55,6 +55,28 @@ export function createBattlemapController(dom){
       }else dom.coordsPill.textContent = "x: – | y: –";
     }
     if(dom.zoomPill) dom.zoomPill.textContent = `zoom: ${Math.round(state.camera.zoom * 100)}%`;
+  }
+
+  function syncZoomUi(){
+    if(!dom.zoomRange) return;
+    if(document.activeElement !== dom.zoomRange){
+      dom.zoomRange.value = String(state.camera.zoom);
+    }
+    if(dom.zoomValue){
+      dom.zoomValue.textContent = `${Math.round(state.camera.zoom * 100)}%`;
+    }
+  }
+
+  function applyZoom(z){
+    const next = clamp(z, 0.25, 3.5);
+    const center = { x: canvas.width / 2, y: canvas.height / 2 };
+    const before = screenToWorld(canvas, state.camera, center);
+    state.camera.zoom = next;
+    const after = screenToWorld(canvas, state.camera, center);
+    state.camera.x += (before.x - after.x);
+    state.camera.y += (before.y - after.y);
+    dirty = true;
+    syncZoomUi();
   }
 
   function fmtMeters(m){
@@ -177,6 +199,7 @@ function markDirty(full=true){
   // Value readouts (sliders)
   dom.drawWidthValue && (dom.drawWidthValue.textContent = String(state.ui.drawWidth || 3));
   dom.cellPxValue && (dom.cellPxValue.textContent = String(state.grid.cellPx || 40));
+  syncZoomUi();
 
   // Sync tool buttons (icon toolbar)
   if(dom.toolButtons){
@@ -351,6 +374,12 @@ dom.bgFile?.addEventListener("change", async () => {
     dirty = true;
     markDirty(false);
   });
+  dom.zoomRange?.addEventListener("input", () => {
+    const v = Number(dom.zoomRange.value || 1);
+    if(!isFinite(v)) return;
+    applyZoom(v);
+    markDirty(false);
+  });
   dom.metersPerCell?.addEventListener("change", () => {
     const v = Number(dom.metersPerCell.value || 1);
     state.grid.metersPerCell = Math.max(0.1, Math.min(50, v));
@@ -510,8 +539,7 @@ dom.bgFile?.addEventListener("change", async () => {
 
   // allow external zoom change if needed
   function setZoom(z){
-    state.camera.zoom = clamp(z, 0.25, 3.5);
-    dirty = true;
+    applyZoom(z);
   }
 
   return {
