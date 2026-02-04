@@ -657,7 +657,24 @@ function monsterSizeToCells(sizeRaw){
 
         // Initiative
         const initTd = document.createElement("td");
-        initTd.textContent = c.initiative.toString();
+        const initInput = document.createElement("input");
+        initInput.type = "number";
+        initInput.value = c.initiative.toString();
+        initInput.classList.add("stat-input");
+        initInput.title = "Initiative";
+        initInput.addEventListener("change", () => {
+          const activeId = combatants[currentIndex]?.id ?? null;
+          const v = Number(initInput.value);
+          c.initiative = Number.isFinite(v) ? v : 0;
+          sortCombatants();
+          if (activeId !== null) {
+            const newIndex = combatants.findIndex((item) => item.id === activeId);
+            currentIndex = newIndex >= 0 ? newIndex : 0;
+          }
+          saveState();
+          render();
+        });
+        initTd.appendChild(initInput);
         tr.appendChild(initTd);
 
         // CA : base + bonus (temp)
